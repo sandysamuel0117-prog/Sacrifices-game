@@ -1,0 +1,363 @@
+[gd_scene load_steps=18 format=3 uid="uid://blhccrvukny3d"]
+
+[ext_resource type="Texture2D" uid="uid://bq7uini8j03k8" path="res://WhatsApp Image 2025-10-04 at 5.28.41 PM (1).jpeg" id="1_0hol4"]
+[ext_resource type="Texture2D" uid="uid://y21nmjrm85dh" path="res://WhatsApp Image 2025-10-04 at 5.28.41 PM.jpeg" id="1_epypp"]
+[ext_resource type="Texture2D" uid="uid://dfhey4ua4imjl" path="res://WhatsApp Image 2025-10-04 at 5.28.41 PM (2).jpeg" id="2_q6r6c"]
+[ext_resource type="Texture2D" uid="uid://dno2nfntyonqo" path="res://WhatsApp_Image_2025-10-04_at_5.28.03_PM-removebg-preview.png" id="3_q6r6c"]
+[ext_resource type="Texture2D" uid="uid://certfhb1gh1uk" path="res://WhatsApp_Image_2025-10-04_at_6.42.13_PM-removebg-preview.png" id="6_kdubu"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0hol4"]
+size = Vector2(1543, 399)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kdubu"]
+size = Vector2(1477, 123)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_epypp"]
+size = Vector2(1142.75, 149)
+
+[sub_resource type="GDScript" id="GDScript_q6r6c"]
+script/source = "extends CharacterBody2D
+
+@export var speed := 200.0
+@export var jump_force := -400.0
+@export var gravity := 900.0
+
+@export var max_health := 100
+var health := 0
+
+@export var health_decrease_interval := 30.0
+@export var health_decrease_amount := 20
+var _health_timer := 0.0
+
+var health_bar: ProgressBar
+var win_label: Label
+var total_coins := 0  # 🟡 عدد الكوينز في بداية اللعبة
+
+func _ready():
+	if not is_in_group(\"Player\"):
+		add_to_group(\"Player\")
+
+	if has_node(\"HealthBar\"):
+		health_bar = $HealthBar
+		health_bar.max_value = max_health
+		health_bar.value = health
+
+	if has_node(\"WinLabel\"):
+		win_label = $WinLabel
+		win_label.visible = false
+
+	# 🟡 نحسب عدد الكوينز الموجودين وقت بدء اللعبة
+	total_coins = get_tree().get_nodes_in_group(\"Coins\").size()
+
+func _physics_process(delta):
+	if not is_on_floor():
+		velocity.y += gravity * delta
+
+	var input_direction = Input.get_axis(\"ui_left\", \"ui_right\")
+	velocity.x = input_direction * speed
+
+	if Input.is_action_just_pressed(\"ui_up\") and is_on_floor():
+		velocity.y = jump_force
+
+	move_and_slide()
+
+	# ⏰ Health decreases over time
+	_health_timer += delta
+	if _health_timer >= health_decrease_interval:
+		_health_timer = 0.0
+		decrease_health(health_decrease_amount)
+
+	_check_for_game_over()
+
+func increase_health(amount):
+	health = min(health + amount, max_health)
+	if health_bar:
+		health_bar.value = health
+
+	if health >= max_health:
+		print(\"🎉 You Win!\")
+		if win_label:
+			win_label.text = \"🎉 YOU WIN! 🎉\"
+			win_label.visible = true
+
+func decrease_health(amount):
+	health = max(health - amount, 0)
+	if health_bar:
+		health_bar.value = health
+	if health <= 0:
+		_on_health_depleted()
+
+func _on_health_depleted():
+	print(\"Player health reached 0 - Game Over logic can go here\")
+
+# 🧩 الجزء الجديد المعدل 👇👇👇
+func _check_for_game_over():
+	# لو لسه الكوينز متحسبتش، متعملش حاجة
+	if total_coins == 0:
+		return
+
+	var remaining_coins = get_tree().get_nodes_in_group(\"Coins\").size()
+	if remaining_coins == 0 and health < max_health:
+		print(\"💀 Game Over!\")
+		if win_label:
+			win_label.text = \"💀 GAME OVER 💀\"
+			win_label.visible = true
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kdubu"]
+atlas = ExtResource("3_q6r6c")
+region = Rect2(77, 0, 77, 156)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d21ai"]
+atlas = ExtResource("3_q6r6c")
+region = Rect2(154, 0, 77, 156)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rj586"]
+atlas = ExtResource("3_q6r6c")
+region = Rect2(231, 0, 77, 156)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4d7sh"]
+atlas = ExtResource("3_q6r6c")
+region = Rect2(308, 0, 77, 156)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ir8iy"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kdubu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d21ai")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rj586")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4d7sh")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hqns4"]
+size = Vector2(58, 81)
+
+[sub_resource type="GDScript" id="GDScript_kdubu"]
+script/source = "# inside coin Area2D
+func _on_body_entered(body):
+    if body.is_in_group(\"Player\"):
+        # notify player
+        if body.has_method(\"on_coin_collected\"):
+            body.on_coin_collected()
+        queue_free()
+
+"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_rj586"]
+radius = 29.274563
+
+[node name="Node2D" type="Node2D"]
+
+[node name="StaticBody2D2" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D2"]
+position = Vector2(1868, 905)
+shape = SubResource("RectangleShape2D_0hol4")
+
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D2"]
+position = Vector2(1742, 341)
+scale = Vector2(1, 0.7425)
+texture = ExtResource("1_0hol4")
+
+[node name="StaticBody2D3" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D3"]
+position = Vector2(-724, 699)
+shape = SubResource("RectangleShape2D_kdubu")
+
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D3"]
+position = Vector2(-705.36523, 394)
+scale = Vector2(2.4845507, 2.0561798)
+texture = ExtResource("2_q6r6c")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(588.625, 742.5)
+shape = SubResource("RectangleShape2D_epypp")
+
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D"]
+position = Vector2(589.0001, 468)
+scale = Vector2(0.95416665, 1.4035609)
+texture = ExtResource("1_epypp")
+
+[node name="player" type="CharacterBody2D" parent="."]
+position = Vector2(549, 636)
+script = SubResource("GDScript_q6r6c")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="player"]
+position = Vector2(0, -75)
+sprite_frames = SubResource("SpriteFrames_ir8iy")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="player"]
+root_node = NodePath("../..")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="player"]
+position = Vector2(-1, -30)
+shape = SubResource("RectangleShape2D_hqns4")
+
+[node name="Camera2D" type="Camera2D" parent="player"]
+position = Vector2(-4, -30)
+
+[node name="HealthBar" type="ProgressBar" parent="player"]
+offset_left = -578.0
+offset_top = -307.0
+offset_right = -318.0
+offset_bottom = -268.0
+
+[node name="WinLabel" type="Label" parent="player"]
+offset_left = -534.0
+offset_top = -264.0
+offset_right = -352.0
+offset_bottom = -221.0
+
+[node name="coin" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin"]
+position = Vector2(654, 601.5)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin"]
+position = Vector2(656, 609.5001)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin2" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin2"]
+position = Vector2(1518, 599)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin2"]
+position = Vector2(1520, 607)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin3" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin3"]
+position = Vector2(2039, 599)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin3"]
+position = Vector2(2036, 604)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin4" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin4"]
+position = Vector2(-821.9999, 583)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin4"]
+position = Vector2(-822, 591)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin5" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin5"]
+position = Vector2(-305.99994, 638)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin5"]
+position = Vector2(-307, 643)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin6" type="Area2D" parent="." groups=["coins"]]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin6"]
+position = Vector2(96.00006, 679)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin6"]
+position = Vector2(96, 688)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin7" type="Area2D" parent="."]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin7"]
+position = Vector2(1030, 649)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin7"]
+position = Vector2(1029, 654)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin8" type="Area2D" parent="."]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin8"]
+position = Vector2(-554.99976, 582)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin8"]
+position = Vector2(-556, 589)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin9" type="Area2D" parent="."]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin9"]
+position = Vector2(1235.0001, 615)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin9"]
+position = Vector2(1240, 620)
+shape = SubResource("CircleShape2D_rj586")
+
+[node name="coin10" type="Area2D" parent="."]
+collision_layer = 0
+script = SubResource("GDScript_kdubu")
+health_gain = null
+
+[node name="Sprite2D" type="Sprite2D" parent="coin10"]
+position = Vector2(280.00018, 618)
+scale = Vector2(0.24000002, 0.22199997)
+texture = ExtResource("6_kdubu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="coin10"]
+position = Vector2(282, 625)
+shape = SubResource("CircleShape2D_rj586")
